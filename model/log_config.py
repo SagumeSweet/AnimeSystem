@@ -41,7 +41,7 @@ class Formatter(object):
         self._date_format = value
 
     def factory(self):
-        return {"format": self.format, "datefmt": self.date_format}
+        return {"formatter": self.format, "datefmt": self.date_format}
 
 
 class Handler(object):
@@ -69,7 +69,7 @@ class Handler(object):
 
     @property
     def all_level(self):
-        return "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NOTEST"
+        return "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NOTSET"
 
     @property
     def level(self):
@@ -83,7 +83,7 @@ class Handler(object):
             raise LogError("handler选择level错误，没有此level: " + value)
 
     def factory(self):
-        return {"class": self.__class__.CLASS_HANDLER, "formatter": self.formatter.factory(), "level": self.level}
+        return {"class": self.__class__.CLASS_HANDLER, "formatter": self.formatter.name, "level": self.level}
 
 
 class StreamHandler(Handler):
@@ -147,7 +147,7 @@ class FileHandler(Handler):
 
 
 class Root(object):
-    def __init__(self, level="NOTEST"):
+    def __init__(self, level="NOTSET"):
         self._level = level
         self._handlers = {}
 
@@ -157,7 +157,7 @@ class Root(object):
 
     @property
     def all_level(self):
-        return "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NOTEST"
+        return "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL", "NOTSET"
 
     @property
     def handlers(self):
@@ -171,7 +171,7 @@ class Root(object):
             raise NewLogConfigValueTypeError("LogConfig.handlers注入失败", Handler.__name__, value.__class__.__name__)
 
     def factory(self):
-        return {"level": self.level, "handlers": class_to_dict(self.handlers)}
+        return {"level": self.level, "handlers": list(map(lambda handler: handler.name, self.handlers.values()))}
 
 
 class LogConfig(object):
@@ -179,7 +179,7 @@ class LogConfig(object):
         self._formatters = {}
         self._handlers = {}
         self.formatters = Formatter("Default")
-        self.handlers = StreamHandler("Default", self.formatters["Default"], "NOTEST", sys.stdout)
+        self.handlers = StreamHandler("Default", self.formatters["Default"], "NOTSET", sys.stdout)
         root = Root()
         root.handlers = self.handlers["Default"]
         self._root = root
